@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# pcx-functions
+
+source $(dirname ${BASH_SOURCE[0]})/shared.inc
+
+pcxs() {
+  aws ec2 describe-vpc-peering-connections \
+    --query "VpcPeeringConnections[].[
+               VpcPeeringConnectionId, 
+               Status.Message, 
+               AccepterVpcInfo.OwnerId, 
+               AccepterVpcInfo.VpcId, 
+               AccepterVpcInfo.CidrBlock, 
+               RequesterVpcInfo.OwnerId, 
+               RequesterVpcInfo.VpcId, 
+               RequesterVpcInfo.CidrBlock]" --output text
+}
+
+pcx-accept() {
+
+  local pcx_id="$1"
+  [[ $# -ne 1 ]] && __bma_usage "pcx_id" && return 1
+
+  aws ec2 accept-vpc-peering-connection         \
+    --vpc-peering-connection-id "$pcx_id"       \
+    --query VpcPeeringConnection.Status.Message \
+    --output text
+}
+
+
+pcx-create() {
+
+  [[ $# -ne 3 ]] && __bma_usage "vpc_id peer_vpc_id peer_account_id" && return 1
+
+  local vpc_id="$1"
+  local peer_vpc_id="$2"
+  local peer_account_id="$3"
+
+  aws ec2 create-vpc-peering-connection                     \
+      --vpc-id ${vpc_id}                                    \
+      --peer-vpc-id ${peer_vpc_id}                          \
+      --peer-owner-id ${peer_account_id}                    \
+      --query 'VpcPeeringConnection.VpcPeeringConnectionId' \
+      --output text
+}
+
