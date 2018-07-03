@@ -26,3 +26,13 @@ bucket-acls() {
   done
 }
 
+bucket-remove() {
+  local buckets=$(__bma_read_inputs $@)
+  [[ -z "$buckets" ]] && __bma_usage "bucket [bucket]" && return 1
+
+  local bucket
+  for bucket in $buckets; do
+    aws s3 rb --force "s3://${bucket}"
+  done
+}
+

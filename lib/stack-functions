@@ -34,6 +34,45 @@
 # And don't forget, these naming conventions are completely optional.
 ##
 
+# Estimate cost!
+stack-cost-estimate() {
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z ${stacks} ]] && __bma_usage "stack [stack]" && return 1
+  local stack
+  for stack in $stacks; do
+    aws cloudformation estimate-template-cost                         \
+      --template-body file://<(stack-template "$stack") \
+      --parameters file://<(stack-parameters "$stack")  \
+      --query "Url" \
+      --output text
+  done
+}
+
+stack-tag-set() {
+  local key=$1
+  local value=$2
+  shift 2
+
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z ${stacks} ]] && __bma_usage "tag-key tag-value stack [stack]" && return 1
+
+  local stack
+  for stack in $stacks; do
+    local tags=$(aws cloudformation describe-stacks                 \
+           --stack-name "$stack"                            \
+           --query "[
+                  [{Key:'$key', Value:'$value'}], 
+                  Stacks[].Tags[?Key != '$key'][]
+                ][]")
+    local parameters=$(stack-parameters "$stack")
+
+    aws cloudformation update-stack \
+      --stack-name "$stack"         \
+      --use-previous-template       \
+      --parameters "$parameters"    \
+      --tags "$tags"
+  done
+}
 
 # List CF stacks
 #
