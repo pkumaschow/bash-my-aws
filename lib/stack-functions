@@ -34,6 +34,18 @@
 # And don't forget, these naming conventions are completely optional.
 ##
 
+stack-arn() {
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z ${stacks} ]] && __bma_usage "stack [stack]" && return 1
+  local stack
+  for stack in $stacks; do
+    aws cloudformation describe-stacks \
+      --stack-name "$stack"            \
+      --query "Stacks[].StackId" \
+      --output text
+  done
+}
+
 # Estimate cost!
 stack-cost-estimate() {
   local stacks=$(__bma_read_inputs $@)
@@ -48,29 +60,113 @@ stack-cost-estimate() {
   done
 }
 
-stack-tag-set() {
-  local key=$1
-  local value=$2
-  shift 2
+stack-tag(){
+  local tags=$1
+  shift 1
+  # XXX DRY up usage msg
+  [[ -z "${tags}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
 
   local stacks=$(__bma_read_inputs $@)
-  [[ -z ${stacks} ]] && __bma_usage "tag-key tag-value stack [stack]" && return 1
+  [[ -z "${stacks}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
+
+  local stack
+  # ??? more efficient to provide 20 stack-arns at a time?
+  for stack in $stacks; do
+    aws resourcegroupstaggingapi tag-resources \
+      --resource-arn-list "$(stack-arn $stack)"               \
+      --tags "$tags"
+  done
+}
+
+stack-untag(){
+  local tag_keys="$(echo $1 | tr , ' ')"
+  shift 1
+  # XXX DRY up usage msg
+  [[ -z "${tag_keys}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
+
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z "${stacks}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
+
+  local stack
+  # ??? more efficient to provide 20 stack-arns at a time?
+  for stack in $stacks; do
+    aws resourcegroupstaggingapi untag-resources \
+      --resource-arn-list "$(stack-arn $stack)"               \
+      --tag-keys "$tag_keys"
+  done
+}
+
+stack-tag-set() {
+  local tag_key=$1
+  local tag_value=$2
+  shift 2
+  [[ -z "${tag_key}" ]]    && __bma_usage "tag-key tag-value stack [stack]" && return 1
+  [[ -z "${tag_value}" ]] && __bma_usage "tag-key tag-value stack [stack]" && return 1
+
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z "${stacks}" ]] && __bma_usage "tag-key tag-value stack [stack]" && return 1
 
   local stack
   for stack in $stacks; do
-    local tags=$(aws cloudformation describe-stacks                 \
-           --stack-name "$stack"                            \
+
+    # XXX deal with tagging service failing
+    local tags=$(aws cloudformation describe-stacks \
+           --stack-name "$stack"                    \
            --query "[
-                  [{Key:'$key', Value:'$value'}], 
-                  Stacks[].Tags[?Key != '$key'][]
+                  [{Key:'$tag_key', Value:'$tag_value'}], 
+                  Stacks[].Tags[?Key != '$tag_key'][]
                 ][]")
-    local parameters=$(stack-parameters "$stack")
+
+    local parameters=$(aws cloudformation describe-stacks \
+           --stack-name "$stack"                          \
+           --query '
+             Stacks[].Parameters[].{
+               ParameterKey: ParameterKey, 
+               UsePreviousValue: `true`
+           }')
+
+     $([[ -n $DRY_RUN ]] && echo echo) aws cloudformation update-stack \
+      --stack-name "$stack"         \
+      --use-previous-template       \
+      --parameters "$parameters"    \
+      --tags "$tags"                \
+      --capabilities CAPABILITY_IAM
+
+  done
+}
+
+stack-tag-delete() {
+  local tag_key=$1
+  shift 1
+  [[ -z "${tag_key}" ]] && __bma_usage "tag-key stack [stack]" && return 1
+
+  local stacks=$(__bma_read_inputs $@)
+  [[ -z "${stacks}" ]] && __bma_usage "tag-key stack [stack]" && return 1
+
+  local stack
+  for stack in $stacks; do
+
+    # XXX deal with tagging service failing
+    local tags=$(aws cloudformation describe-stacks \
+           --stack-name "$stack"                    \
+           --query "[
+                  Stacks[].Tags[?Key != '$tag_key'][]
+                ][]")
+
+    local parameters=$(aws cloudformation describe-stacks \
+           --stack-name "$stack"                          \
+           --query '
+             Stacks[].Parameters[].{
+               ParameterKey: ParameterKey, 
+               UsePreviousValue: `true`
+           }')
 
     aws cloudformation update-stack \
       --stack-name "$stack"         \
       --use-previous-template       \
       --parameters "$parameters"    \
       --tags "$tags"
+
   done
 }
 

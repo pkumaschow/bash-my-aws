@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# resource-functions
+
+resources() {
+
+  local TAGS_ARG=""
+  [[ -t 1 ]] || TAGS_ARG=", join(' ', [Tags[].[join('=',[Key,Value])][]][])"
+
+  aws resourcegroupstaggingapi get-resources                              \
+    --query "ResourceTagMappingList[].[
+               ResourceARN, 
+               [Tags[?Key=='aws:cloudformation:stack-name'].Value][0][0]
+               $TAGS_ARG
+            ]"                                                            \
+    --output text                                                         |
+  column -s$'\t' -t
+}
+
+
+# # Resources without a stack
+# $ resources | grep -v stack
+
+# # Resources without a costcode
+# $ resources | grep -v costcode
+
+# In a stack but has not costcode
+# $ rsc-aws-accounts | grep resi_leads_ | aws-panopticon "resources | grep stack | grep -v costcode"
+
+# stacks containing resource without a costcode 
+# $ rsc-aws-accounts | grep resi_leads_ | aws-panopticon "resources | grep stack | grep -v costcode | awk '{print \$2}' | sort -u"
+
+# stacks without a costcode
+# $ stacks | stack-tags | grep -v costcode
+
+
