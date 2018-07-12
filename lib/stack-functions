@@ -60,41 +60,41 @@ stack-cost-estimate() {
   done
 }
 
-stack-tag(){
-  local tags=$1
-  shift 1
-  # XXX DRY up usage msg
-  [[ -z "${tags}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
+#stack-tag(){
+#  local tags=$1
+#  shift 1
+#  # XXX DRY up usage msg
+#  [[ -z "${tags}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
+#
+#  local stacks=$(__bma_read_inputs $@)
+#  [[ -z "${stacks}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
+#
+#  local stack
+#  # ??? more efficient to provide 20 stack-arns at a time?
+#  for stack in $stacks; do
+#    aws resourcegroupstaggingapi tag-resources \
+#      --resource-arn-list "$(stack-arn $stack)"               \
+#      --tags "$tags"
+#  done
+#}
 
-  local stacks=$(__bma_read_inputs $@)
-  [[ -z "${stacks}" ]] && __bma_usage "tags stack [stack] # tags arg fmt: KeyName1=string,KeyName2=string" && return 1
-
-  local stack
-  # ??? more efficient to provide 20 stack-arns at a time?
-  for stack in $stacks; do
-    aws resourcegroupstaggingapi tag-resources \
-      --resource-arn-list "$(stack-arn $stack)"               \
-      --tags "$tags"
-  done
-}
-
-stack-untag(){
-  local tag_keys="$(echo $1 | tr , ' ')"
-  shift 1
-  # XXX DRY up usage msg
-  [[ -z "${tag_keys}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
-
-  local stacks=$(__bma_read_inputs $@)
-  [[ -z "${stacks}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
-
-  local stack
-  # ??? more efficient to provide 20 stack-arns at a time?
-  for stack in $stacks; do
-    aws resourcegroupstaggingapi untag-resources \
-      --resource-arn-list "$(stack-arn $stack)"               \
-      --tag-keys "$tag_keys"
-  done
-}
+#stack-untag(){
+#  local tag_keys="$(echo $1 | tr , ' ')"
+#  shift 1
+#  # XXX DRY up usage msg
+#  [[ -z "${tag_keys}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
+#
+#  local stacks=$(__bma_read_inputs $@)
+#  [[ -z "${stacks}" ]] && __bma_usage "tag-keys stack [stack] # tag-keys arg fmt: KeyName1,KeyName2" && return 1
+#
+#  local stack
+#  # ??? more efficient to provide 20 stack-arns at a time?
+#  for stack in $stacks; do
+#    aws resourcegroupstaggingapi untag-resources \
+#      --resource-arn-list "$(stack-arn $stack)"               \
+#      --tag-keys "$tag_keys"
+#  done
+#}
 
 stack-tag-set() {
   local tag_key=$1
