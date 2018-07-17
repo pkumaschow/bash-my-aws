@@ -17,6 +17,21 @@ resources() {
   column -s$'\t' -t
 }
 
+resource-tags-apply() {
+
+  local tags="$1" # KeyName1=string,KeyName2=string
+  shift 1
+  local resource_arns="$(__bma_read_inputs $@)"
+  [[ -z "$resource_arns" ]] && __bma_usage "resource_arn [resource_arn]" && return 1
+
+  # command can accept up to 20 arns but we're keeping this simple
+  for resource_arn in $resource_arns; do
+    aws resourcegroupstaggingapi tag-resources \
+      --resource-arn-list $resource_arn        \
+      --tags "$tags"                                
+  done
+}
+
 
 # # Resources without a stack
 # $ resources | grep -v stack

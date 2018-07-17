@@ -29,6 +29,10 @@ aws-panopticon() {
   done
 }
 
+columnise() {
+  column -s$'\t' -t
+}
+
 regions() {
   aws ec2 describe-regions           \
     --query "Regions[].[RegionName]" \
@@ -39,7 +43,7 @@ regions() {
 region-each() {
   local old_aws_default_region="$AWS_DEFAULT_REGION"
   for AWS_DEFAULT_REGION in $(regions); do
-    $@ | sed "s/$/ #${AWS_DEFAULT_REGION}/"
+    eval $@ | sed "s/$/ #${AWS_DEFAULT_REGION}/"
   done
   AWS_DEFAULT_REGION="$old_aws_default_region"
 }
