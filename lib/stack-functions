@@ -407,7 +407,7 @@ stack-tag-apply() {
   local tag_key=$1
   local tag_value=$2
   shift 2
-  local usage_string="tag-key tag-value stack [stack]"
+  local usage_msg="tag-key tag-value stack [stack]"
   [[ -z "${tag_key}" ]]    && __bma_usage $usage_msg && return 1
   [[ -z "${tag_value}" ]] && __bma_usage $usage_msg && return 1
 
