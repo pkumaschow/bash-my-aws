@@ -6,6 +6,18 @@ _bma_elbs_completion() {
     return 0
 }
 
+_bma_regions_completion() {
+  local command="$1"
+  local word="$2"
+
+  case "${COMP_CWORD}" in
+    1)
+      COMPREPLY=( $(compgen -W "$(regions)" -- ${word}) )
+      return 0
+      ;;
+  esac
+}
+
 _bma_stacks_completion() {
   local command="$1"
   local word="$2"
@@ -70,6 +82,7 @@ complete -F _bma_asgs_completion asg-resume
 complete -F _bma_asgs_completion asg-stack
 complete -F _bma_asgs_completion asg-suspend
 complete -F _bma_asgs_completion asg-scaling-activities
+complete -F _bma_regions_completion region
 complete -F _bma_stacks_completion stacks
 complete -F _bma_stacks_completion stack-cancel-update
 complete -F _bma_stacks_completion stack-update
