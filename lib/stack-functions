@@ -91,6 +91,40 @@ stack-cancel-update() {
   aws cloudformation cancel-update-stack --stack-name $stack
 }
 
+
+_stack_by_params_args() {
+  local params="${1}"
+  [[ -z ${params} ]] && __bma_usage "params-file" && return 1
+  local stack=$(basename "$params" .json | sed 's/-params//')
+  local template_base=$(basename "$params" .json | sed 's/-params.*//')
+  local template
+  for extension in json yaml yml; do
+    if [ -f "${template_base}.${extension}" ]; then
+      template="${template_base}.${extension}"
+      break
+    elif [ -f "${template_base%-*}.${extension}" ]; then
+      template="${template_base%-*}.${extension}"
+      break
+    fi
+  done
+
+  echo "$stack" "$template" "$params"
+    
+}
+
+
+stack-create-by-params() {
+  stack-create $(_stack_by_params_args $@)
+}
+
+stack-update-by-params() {
+  stack-update $(_stack_by_params_args $@)
+}
+
+stack-diff-by-params(){
+  stack-diff $(_stack_by_params_args $@)
+}
+
 stack-create() {
   # type: action
   # create a new stack
@@ -650,8 +684,8 @@ _stack_template_arg() {
   # Determine name of template to use
   local stack="$(_stack_name_arg $@)"
   local template=$2
-  for extension in json yaml yml; do
-    if [ -z "$template" ]; then
+  if [ -z "$template" ]; then
+    for extension in json yaml yml; do
       if [ -f "${stack}.${extension}" ]; then
         template="${stack}.${extension}"
         break
@@ -659,8 +693,8 @@ _stack_template_arg() {
         template="${stack%-*}.${extension}"
         break
       fi
-    fi
-  done
+    done
+  fi
 
   local regex_role_arn_or_capabilities="^\-\-role\-arn=.*|^\-\-capabilities=.*"
   if [[ $template =~ $regex_role_arn_or_capabilities ]] ; then
