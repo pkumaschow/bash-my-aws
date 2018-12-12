@@ -108,7 +108,7 @@ _stack_by_params_args() {
     fi
   done
 
-  echo "$stack" "$template" "$params"
+  echo "$stack" "$template" "$params" ${@:2}
     
 }
 
